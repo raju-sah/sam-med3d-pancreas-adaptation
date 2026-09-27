@@ -27,6 +27,49 @@ def config_hash(cfg: dict[str, Any]) -> str:
     return hashlib.sha256(json.dumps(cfg, sort_keys=True).encode()).hexdigest()[:16]
 
 
+def snapshot_rng() -> dict:
+    """RNG states normalized to CPU for storage (map_location-proof)."""
+    return {
+        "python": random.getstate(),
+        "numpy": np.random.get_state(),
+        "torch": torch.get_rng_state().cpu(),
+        "cuda": [s.cpu() for s in torch.cuda.get_rng_state_all()]
+        if torch.cuda.is_available() else None,
+    }
+
+
+def restore_rng(r: dict) -> bool:
+    """Best-effort RNG restore. Returns False (warns, never crashes) on mismatch,
+    e.g. torch-version RNG layout differences across machines."""
+    try:
+        if "python" not in r:
+            return True
+        random.setstate(r["python"])
+        np.random.set_state(r["numpy"])
+        st = r["torch"]
+        if torch.is_tensor(st):
+            st = st.cpu().to(torch.uint8).contiguous()
+            if st.numel() == torch.get_rng_state().numel():
+                torch.set_rng_state(st)
+            else:
+                print(f"WARNING: CPU RNG size mismatch "
+                      f"({st.numel()} vs {torch.get_rng_state().numel()}); skipped")
+                return False
+        if r.get("cuda") is not None and torch.cuda.is_available():
+            states = r["cuda"]
+            if torch.is_tensor(states):
+                states = [states]
+            dev = torch.cuda.current_device()
+            fixed = [s.to(device=f"cuda:{dev}", dtype=torch.uint8).contiguous()
+                     for s in states if torch.is_tensor(s)]
+            if fixed:
+                torch.cuda.set_rng_state_all(fixed)
+        return True
+    except Exception as e:  # noqa: BLE001 — RNG restore must never kill training
+        print(f"WARNING: RNG restore skipped ({type(e).__name__}: {e})")
+        return False
+
+
 def seed_everything(seed: int) -> None:
     import monai.utils as U
 
@@ -131,12 +174,7 @@ class Trainer:
             "config": self.cfg,
             "config_hash": config_hash(self.cfg),
             "seed": self.cfg["seed"],
-            "rng": {
-                "python": random.getstate(),
-                "numpy": np.random.get_state(),
-                "torch": torch.get_rng_state(),
-                "cuda": torch.cuda.get_rng_state_all() if torch.cuda.is_available() else None,
-            },
+            "rng": snapshot_rng(),
         }
 
     def save(self, name: str, epoch: int) -> Path:
@@ -154,19 +192,7 @@ class Trainer:
         self.best_macro, self.best_epoch, self.bad_events = (
             s["best_macro"], s["best_epoch"], s["bad_events"])
         r = s.get("rng") or {}
-        if "python" in r:
-            random.setstate(r["python"])
-            np.random.set_state(r["numpy"])
-            # map_location may have moved CPU ByteTensors to CUDA on load
-            torch_state = r["torch"]
-            if torch.is_tensor(torch_state) and torch_state.device.type != "cpu":
-                torch_state = torch_state.cpu()
-            torch.set_rng_state(torch_state)
-            if r.get("cuda") is not None and torch.cuda.is_available():
-                cuda_state = r["cuda"]
-                if torch.is_tensor(cuda_state) and cuda_state.device.type == "cpu":
-                    cuda_state = cuda_state.cuda()
-                torch.cuda.set_rng_state_all(cuda_state)
+        restore_rng(r)
         self.start_epoch = s["epoch"] + 1
         return self.start_epoch
 

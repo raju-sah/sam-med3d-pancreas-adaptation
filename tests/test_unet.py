@@ -1,6 +1,7 @@
 """Phase 3 tests — synthetic tensors/volumes only. No dataset, no GPU needed."""
 
 import json
+import random
 import tempfile
 import unittest
 from pathlib import Path
@@ -122,7 +123,7 @@ class UnetPhase3(unittest.TestCase):
 
     def test_checkpoint_save_load_resume(self):
         from src.models.unet import build_unet
-        from src.training.trainer import Trainer, config_hash
+        from src.training.trainer import Trainer, config_hash, restore_rng, snapshot_rng
 
         cfg = toy_cfg()
         with tempfile.TemporaryDirectory() as d:
@@ -140,6 +141,12 @@ class UnetPhase3(unittest.TestCase):
             with self.assertRaises(AssertionError):
                 tr3.load(Path(d) / "best.pt")
             self.assertNotEqual(config_hash(cfg), config_hash(bad))
+            # RNG helpers: roundtrip works, garbage never crashes
+            self.assertTrue(restore_rng(snapshot_rng()))
+            self.assertFalse(restore_rng({"python": random.getstate(),
+                                          "numpy": __import__("numpy").random.get_state(),
+                                          "torch": torch.zeros(4, dtype=torch.uint8),
+                                          "cuda": None}))
 
     def test_split_exclusion(self):
         from src.data.preprocess import repo_split_ids
