@@ -2,6 +2,7 @@
 data/*
 !data/README.md
 !data/.gitkeep
+!data/splits/
 *.nii
 *.nii.gz
 *.nrrd
@@ -32,6 +33,10 @@ kaggle.json
 .env.*
 *.key
 *.pem
+
+# Kaggle real push metadata (template is tracked, real slug file is not)
+kaggle/run-*/kernel-metadata.json
+kaggle/kernel-metadata.json
 
 # Python cache / build
 __pycache__/

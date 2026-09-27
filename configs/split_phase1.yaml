@@ -1,0 +1,10 @@
+# Phase 1 frozen split config. Test IDs produced here are FINAL.
+seed: 42
+train_frac: 0.7
+val_frac: 0.15
+inventory_csv: results/dataset/task07_inventory.csv
+out_dir: data/splits
+dataset: MSD Task07_Pancreas
+dataset_source: hansenc/pancreas-task07
+audit_kernel: rajucode/task07-pancreas-phase-1-dataset-audit-cpu
+audit_kernel_version: 4

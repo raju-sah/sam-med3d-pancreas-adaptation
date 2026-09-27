@@ -21,14 +21,17 @@ under **limited training data**?
 - A clean, reproducible comparison (frozen vs full vs PEFT vs U-Net, across data
   fractions) is portfolio-grade evidence of research engineering ability.
 
-## Planned dataset / task
+## Planned dataset / task — DECIDED (Phase 1, see ADR 001)
 
-- Task: 3D semantic segmentation of pancreas (and tumor where labels exist).
-- Candidate sources (final choice in Phase 1): **MSD Task 7 Pancreas** or
-  **NIH Pancreas-CT**. Decision criteria: license permitting research use,
-  availability on Kaggle, label quality for pancreas (+ tumor).
-- Fixed train/val/test splits with frozen test IDs; test set never touched
-  during training or model selection.
+- Dataset: **MSD Task07_Pancreas** (locked; NIH Pancreas-CT reserved only as
+  possible later external validation, not primary).
+- Task: 3D multi-class segmentation, labels `0 = background`, `1 = pancreas`,
+  `2 = pancreatic tumor/cancer`. CT, portal venous phase, MSKCC, CC-BY-SA 4.0.
+- Verified by remote Kaggle audit: 281 labeled cases + 139 test images
+  (labels withheld). Splits from labeled cases only, seed 42:
+  **train 197 / val 42 / internal test 42 (FROZEN)**.
+- Details: `docs/dataset_card.md`, `docs/adr/001-primary-dataset-msd-task07.md`,
+  `data/splits/split_manifest.json`.
 
 ## Planned baselines and experiments
 
@@ -86,6 +89,6 @@ same fixed seed subsampling, all models compared at each fraction.
 
 ## Current status
 
-- [x] Phase 0: scaffold, env validation, Kaggle CLI/auth check, sanity tests
-- [ ] Phase 1: dataset acquisition and validation — NOT STARTED
+- [x] Phase 0: scaffold, env validation, Kaggle CLI/auth check, sanity tests — DONE
+- [x] Phase 1: MSD Task07 locked, remote audit clean, frozen 197/42/42 splits — DONE
 - [ ] Phases 2–10: see `docs/research_plan.md` — NOT STARTED

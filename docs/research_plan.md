@@ -13,7 +13,21 @@
   exposing secrets, no training code, no data downloaded.
 - Risks: local disk 92% full (18 GB free) — monitor; no local GPU (by design).
 
-## Phase 1: dataset acquisition and validation
+## Phase 1: dataset acquisition and validation — DONE (2026-09-27)
+
+- Decided: MSD Task07_Pancreas locked as primary (ADR 001); NIH Pancreas-CT
+  reserved for possible later external validation only.
+- Verified by remote Kaggle CPU audit (kernel
+  `rajucode/task07-pancreas-phase-1-dataset-audit-cpu` v4, mirror
+  `hansenc/pancreas-task07`): 281 labeled cases + 139 test images, exact
+  image/label match, labels {0,1,2} only, all shapes match, all RAS.
+- Frozen splits (seed 42): train 197 / val 42 / internal test 42;
+  manifest SHA-256 verified identical remote and local.
+- Artifacts: `docs/dataset_card.md`, `docs/adr/001-primary-dataset-msd-task07.md`,
+  `results/dataset/task07_inventory.csv`, `results/dataset/task07_summary.json`,
+  `data/splits/*.json`, `src/data/split.py`, `tests/test_split.py`,
+  `kaggle/run-001-audit/audit_task07.py`.
+- Original plan below retained for the record; all gates passed.
 
 - Objective: choose and freeze the dataset + splits.
 - Tasks: pick MSD Task 7 Pancreas vs NIH Pancreas-CT (license, Kaggle
@@ -62,8 +76,10 @@
 - Tasks: full-weight fine-tune on 100% data (Kaggle); LR/schedule search
   (small, documented); log train time, memory, trainable params.
 - Artifacts: `configs/sammed3d_full_*.yaml`, metrics CSV, checkpoints.
-- Validation: beats inference baseline; no test leakage; run reproducible
-  from config + seed.
+- Validation: training completes correctly; run reproducible from config +
+  seed; metrics produced with the frozen evaluation protocol; results
+  reported regardless of whether they improve on the baseline (negative
+  results are valid results); no test leakage.
 - Risks: catastrophic forgetting / instability; high GPU-hour cost.
 
 ## Phase 6: limited-data experiments

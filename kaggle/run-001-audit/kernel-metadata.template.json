@@ -1,0 +1,15 @@
+{
+  "id": "rajucode/task07-pancreas-phase1-audit",
+  "title": "Task07 Pancreas Phase 1 dataset audit (CPU)",
+  "code_file": "audit_task07.py",
+  "language": "python",
+  "kernel_type": "script",
+  "is_private": "true",
+  "enable_gpu": "false",
+  "enable_tpu": "false",
+  "enable_internet": "false",
+  "dataset_sources": ["hansenc/pancreas-task07"],
+  "competition_sources": [],
+  "kernel_sources": [],
+  "model_sources": []
+}

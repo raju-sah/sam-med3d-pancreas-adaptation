@@ -31,9 +31,15 @@ GPU memory if practical, total + trainable parameters.
 
 ## 4. Test-set isolation (hard rule)
 
-- Test IDs are frozen once in Phase 1. Never train on, tune on, or early-stop on test.
-- Never print or commit test labels/predictions beyond aggregate metrics.
-- Any split change requires user approval + versioned split file.
+- Test IDs are frozen once in Phase 1. Never train on, tune on, early-stop
+  on, or model-select on test. Any split change requires user approval +
+  versioned split file.
+- After model/configuration selection is completely frozen, test predictions
+  may be used for final quantitative evaluation and post-hoc qualitative
+  figures / error analysis (Phase 8). Qualitative inspection must not trigger
+  additional tuning of the reported final model.
+- Aggregate metrics may be committed. Do not commit per-case test predictions
+  or unnecessary patient-identifying metadata.
 
 ## 5. Experiment logging requirements
 
