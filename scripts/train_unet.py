@@ -81,6 +81,9 @@ def mode_smoke(cfg, task_root: Path, out: Path) -> dict:
 
     gates = {}
     gates["cuda"] = torch.cuda.is_available()
+    from src.training.trainer import env_report
+
+    gates["env"] = env_report()
     import monai
 
     gates["monai"] = monai.__version__

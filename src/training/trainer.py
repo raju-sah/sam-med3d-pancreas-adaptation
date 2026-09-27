@@ -157,9 +157,16 @@ class Trainer:
         if "python" in r:
             random.setstate(r["python"])
             np.random.set_state(r["numpy"])
-            torch.set_rng_state(r["torch"])
+            # map_location may have moved CPU ByteTensors to CUDA on load
+            torch_state = r["torch"]
+            if torch.is_tensor(torch_state) and torch_state.device.type != "cpu":
+                torch_state = torch_state.cpu()
+            torch.set_rng_state(torch_state)
             if r.get("cuda") is not None and torch.cuda.is_available():
-                torch.cuda.set_rng_state_all(r["cuda"])
+                cuda_state = r["cuda"]
+                if torch.is_tensor(cuda_state) and cuda_state.device.type == "cpu":
+                    cuda_state = cuda_state.cuda()
+                torch.cuda.set_rng_state_all(cuda_state)
         self.start_epoch = s["epoch"] + 1
         return self.start_epoch
 
