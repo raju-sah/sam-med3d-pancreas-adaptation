@@ -1,7 +1,8 @@
 # Research plan — SAM-Med3D parameter-efficient adaptation for 3D pancreas segmentation
 
-> Status: Phase 0 DONE, Phase 1 DONE, Phase 2 DONE, Phases 3–10 NOT
-> STARTED. Validation criteria are gates: a phase is done only when its
+> Status: Phase 0 DONE, Phase 1 DONE, Phase 2 DONE (incl. corrective
+> normalization fix), Phase 3 IN PROGRESS, Phases 4–10 NOT STARTED.
+> Validation criteria are gates: a phase is done only when its
 > criteria hold.
 
 ## Phase 0: project / environment setup — DONE
@@ -70,7 +71,12 @@
   cases incl. edge cases (small pancreas, tumor).
 - Risks: spacing heterogeneity; foreground-background imbalance in patches.
 
-## Phase 3: 3D U-Net baseline
+## Phase 3: 3D U-Net baseline — IN PROGRESS
+
+- Internal test remains SEALED during model development; test IDs are read
+  only to enforce exclusion. Checkpoint selected on VALIDATION macro
+  foreground Dice only. Final test evaluation occurs only after
+  model/configuration choices are frozen (later phase).
 
 - Objective: reference performance + training harness all later runs reuse.
 - Tasks: MONAI 3D U-Net, Dice+CE loss, standard augmentation; train on Kaggle

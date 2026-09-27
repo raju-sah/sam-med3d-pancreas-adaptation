@@ -1,0 +1,85 @@
+# Phase 3: MONAI 3D U-Net baseline (100% train). Test set SEALED (exclusion only).
+experiment_id: unet_baseline_001
+seed: 42
+dataset: MSD Task07_Pancreas
+train_fraction: 1.0
+split_manifest: data/splits/split_manifest.json
+preprocess_ref: configs/preprocess_phase2.yaml
+
+# --- frozen Phase 2 preprocessing (DO NOT MODIFY) ---
+orientation: RAS
+target_spacing: [1.5, 1.5, 1.5]
+image_mode: bilinear
+label_mode: nearest
+clamp_min: -1000
+clamp_max: 1000
+norm: positive_intensity_zscore
+valid_labels: [0, 1, 2]
+
+# --- patch sampling (TRAIN ONLY, fixed policy) ---
+patch_size: [96, 96, 96]
+sampler: RandCropByLabelClassesd
+sampler_ratios: [1, 2, 3]     # background : pancreas : tumor center-class odds
+sampler_num_classes: 3
+sampler_num_samples: 1        # 1 patch per volume per iteration (DataLoader batches these)
+
+# --- augmentation (TRAIN ONLY) ---
+aug_flip_prob: 0.5            # RandFlipd per spatial axis
+aug_rotate90_prob: 0.5        # RandRotate90d, k=1..3, spatial plane
+aug_scale_prob: 0.2           # RandScaleIntensityd factors 0.9..1.1
+aug_scale_factors: [0.9, 1.1]
+aug_shift_prob: 0.2           # RandShiftIntensityd offsets -0.1..0.1
+aug_shift_offsets: [-0.1, 0.1]
+
+# --- model (fixed conventional baseline) ---
+model: monai UNet
+spatial_dims: 3
+in_channels: 1
+out_channels: 3
+channels: [32, 64, 128, 256, 512]
+strides: [2, 2, 2, 2]
+num_res_units: 2
+norm: INSTANCE
+
+# --- loss ---
+loss: DiceCELoss
+loss_include_background: false
+loss_to_onehot_y: true
+loss_softmax: true
+# MONAI defaults lambda_dice=1.0, lambda_ce=1.0 (equal weighting) — recorded, not changed.
+
+# --- optimizer / scheduler ---
+optimizer: AdamW
+lr: 0.0001
+weight_decay: 0.00001
+scheduler: CosineAnnealingLR
+# T_max = max_epochs (deterministic).
+
+# --- training loop ---
+batch_size: 2
+max_epochs: 150
+val_interval_epochs: 5
+early_stopping_metric: val_macro_foreground_dice
+early_stopping_patience_val_events: 8
+early_stopping_min_delta: 0.001
+amp: true
+num_workers: 4
+cache: PersistentDataset   # deterministic prefix cached to disk (RAM-safe); random stage fresh
+cache_dir: null            # null -> <output_dir>/cache
+
+# --- validation inference (full volumes, deterministic, no GT cropping) ---
+sw_roi_size: [96, 96, 96]
+sw_overlap: 0.25
+sw_batch_size: 4
+sw_mode: gaussian
+
+# --- checkpoint selection (FROZEN RULE) ---
+checkpoint_metric: macro_foreground_dice   # (dice_c1 + dice_c2)/2, background excluded
+best_filename: best.pt
+last_filename: last.pt
+
+# --- outputs ---
+output_dir: results/unet_baseline_001
+history_csv: results/metrics/unet_baseline_history.csv
+summary_json: results/metrics/unet_baseline_summary.json
+ledger_csv: results/experiments.csv

@@ -1,0 +1,16 @@
+{
+  "id": "rajucode/task07-unet-baseline-smoke-gpu",
+  "title": "Task07 UNet baseline smoke GPU",
+  "code_file": "bootstrap_smoke.py",
+  "language": "python",
+  "kernel_type": "script",
+  "is_private": "true",
+  "enable_gpu": "true",
+  "enable_tpu": "false",
+  "enable_internet": "true",
+  "machine_shape": "",
+  "dataset_sources": ["hansenc/pancreas-task07"],
+  "competition_sources": [],
+  "kernel_sources": [],
+  "model_sources": []
+}
