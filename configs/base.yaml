@@ -1,0 +1,14 @@
+# Phase 0 base config — sanity values only. No training hyperparameters yet.
+project: sam-med3d-pancreas-adaptation
+seed: 42
+paths:
+  data: data
+  checkpoints: checkpoints
+  results_metrics: results/metrics
+  results_figures: results/figures
+sanity:
+  expected_files:
+    - README.md
+    - AGENTS.md
+    - .gitignore
+    - pyproject.toml

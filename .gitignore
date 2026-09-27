@@ -1,0 +1,86 @@
+# Datasets (never commit medical images or raw data)
+data/*
+!data/README.md
+!data/.gitkeep
+*.nii
+*.nii.gz
+*.nrrd
+*.mhd
+*.raw
+*.dcm
+*.dicom
+
+# Checkpoints / model weights (never commit large binaries)
+checkpoints/*
+!checkpoints/README.md
+!checkpoints/.gitkeep
+*.pt
+*.pth
+*.ckpt
+*.safetensors
+*.bin
+*.onnx
+*.pkl
+*.pickle
+
+# Kaggle credentials / secrets (never commit)
+.kaggle/
+kaggle.json
+**/kaggle.json
+**/access_token
+.env
+.env.*
+*.key
+*.pem
+
+# Python cache / build
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+.eggs/
+build/
+dist/
+*.egg
+
+# Virtual environments
+.venv/
+venv/
+env/
+ENV/
+.python-version
+
+# Test / lint caches
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+coverage.xml
+htmlcov/
+
+# Temporary / large experiment artifacts (metrics CSVs and small figures ARE tracked)
+results/tmp/
+results/**/*.log
+*.tmp
+*.temp
+tmp/
+temp/
+outputs/
+lightning_logs/
+runs/
+wandb/
+mlruns/
+.nox/
+
+# OS / editor noise
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/*
+!.vscode/extensions.json
+*.swp
+*.swo
+*~
+
+# Notebooks checkpoints (notebook sources in notebooks/ ARE tracked)
+.ipynb_checkpoints/
