@@ -1,0 +1,22 @@
+[
+ {
+  "case_id": "pancreas_398",
+  "reason": "smallest label-2 volume"
+ },
+ {
+  "case_id": "pancreas_227",
+  "reason": "median label-2 volume"
+ },
+ {
+  "case_id": "pancreas_409",
+  "reason": "largest label-2 volume"
+ },
+ {
+  "case_id": "pancreas_377",
+  "reason": "smallest pancreas"
+ },
+ {
+  "case_id": "pancreas_364",
+  "reason": "fixed-seed random train case"
+ }
+]

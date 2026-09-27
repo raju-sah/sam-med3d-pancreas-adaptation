@@ -26,7 +26,7 @@ under **limited training data**?
 - Dataset: **MSD Task07_Pancreas** (locked; NIH Pancreas-CT reserved only as
   possible later external validation, not primary).
 - Task: 3D multi-class segmentation, labels `0 = background`, `1 = pancreas`,
-  `2 = pancreatic tumor/cancer`. CT, portal venous phase, MSKCC, CC-BY-SA 4.0.
+  `2 = pancreatic mass/tumor` (`'cancer'` in dataset.json). CT, portal venous phase, MSKCC source.
 - Verified by remote Kaggle audit: 281 labeled cases + 139 test images
   (labels withheld). Splits from labeled cases only, seed 42:
   **train 197 / val 42 / internal test 42 (FROZEN)**.
@@ -91,4 +91,5 @@ same fixed seed subsampling, all models compared at each fraction.
 
 - [x] Phase 0: scaffold, env validation, Kaggle CLI/auth check, sanity tests — DONE
 - [x] Phase 1: MSD Task07 locked, remote audit clean, frozen 197/42/42 splits — DONE
-- [ ] Phases 2–10: see `docs/research_plan.md` — NOT STARTED
+- [x] Phase 2: preprocessing frozen (RAS/1.5mm/clamp/z-score), train figures, val smoke test — DONE
+- [ ] Phases 3–10: see `docs/research_plan.md` — NOT STARTED

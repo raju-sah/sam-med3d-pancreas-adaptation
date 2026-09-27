@@ -1,0 +1,21 @@
+# Phase 2 preprocessing policy. Statuses: FROZEN (evidence-backed, ADR 002).
+orientation: RAS            # FROZEN: upstream ToCanonical + audit shows all RAS
+image_mode: bilinear        # FROZEN: continuous interpolation for CT
+label_mode: nearest         # FROZEN: discrete labels; asserted after every resample
+valid_labels: [0, 1, 2]     # FROZEN: audit-verified; 2 = mass/tumor ('cancer' in dataset.json)
+seed: 42
+
+# --- spacing: FROZEN (ADR 002; train-only rule: min tumor keeps >= 50 voxels) ---
+target_spacing: [1.5, 1.5, 1.5]
+upstream_spacing: [1.5, 1.5, 1.5]
+
+# --- intensity: FROZEN (ADR 002; soft-tissue preservation rule) ---
+clamp_min: -1000
+clamp_max: 1000
+norm: fg_zscore             # FROZEN: per-volume foreground-masked z-score (upstream,
+                            # inference-safe: image-only, no labels, no global stats)
+
+dataset: MSD Task07_Pancreas
+split_ref: data/splits/split_manifest.json
+upstream_repo: https://github.com/uni-medical/SAM-Med3D
+upstream_commit: f3de1fa10da98e46f49f176773d2b1e306ba131f

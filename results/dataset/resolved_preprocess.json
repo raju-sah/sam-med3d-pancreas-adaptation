@@ -1,0 +1,36 @@
+{
+ "orientation": "RAS",
+ "spacing_policy": "1.5_iso",
+ "target_spacing": [
+  1.5,
+  1.5,
+  1.5
+ ],
+ "spacing_evidence": {
+  "min_tumor_voxels_at_1.5mm": 195.1,
+  "rule": "1.5_iso iff smallest tumor keeps >= 50 voxels after resampling",
+  "median_spacing": [
+   0.8105,
+   0.8105,
+   2.5
+  ]
+ },
+ "clamp": [
+  -1000.0,
+  1000.0
+ ],
+ "clamp_evidence": {
+  "max_train_frac_outside": 0.4302,
+  "percase_p99.5_max": 700.4,
+  "rule": "[-1000,1000] iff per-case p99.5 max < 1000 (soft tissue preserved; outliers are air/bone/metal only)"
+ },
+ "norm": "fg_zscore",
+ "image_mode": "bilinear",
+ "label_mode": "nearest",
+ "valid_labels": [
+  0,
+  1,
+  2
+ ],
+ "seed": 42
+}

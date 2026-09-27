@@ -1,7 +1,8 @@
 # Research plan — SAM-Med3D parameter-efficient adaptation for 3D pancreas segmentation
 
-> All phases except Phase 0 are PLANNED. No results exist. Validation criteria
-> are gates: a phase is done only when its criteria hold.
+> Status: Phase 0 DONE, Phase 1 DONE, Phase 2 DONE, Phases 3–10 NOT
+> STARTED. Validation criteria are gates: a phase is done only when its
+> criteria hold.
 
 ## Phase 0: project / environment setup — DONE
 
@@ -38,7 +39,19 @@
   from seed, test IDs untouched by any training code.
 - Risks: license restrictions; large download size vs disk; label inconsistencies.
 
-## Phase 2: preprocessing and visualization
+## Phase 2: preprocessing and visualization — DONE (2026-09-27)
+
+- Upstream SAM-Med3D reviewed at commit `f3de1fa` (notes in
+  `docs/sammed3d_preprocessing_notes.md`); no integration.
+- TRAIN-only profile (n=197, remote CPU kernel v8): spacing/intensity/
+  foreground stats recorded; policy frozen in ADR 002 and
+  `configs/preprocess_phase2.yaml` (RAS, 1.5 mm iso, clamp [-1000,1000],
+  fg-masked z-score, nearest-only labels, in-memory binary targets).
+- `src/data/preprocess.py` + `tests/test_preprocess.py` (synthetic only).
+- Train-only figures for 5 representative cases + raw-vs-preprocessed views
+  (`results/figures/phase2/`, 10 PNGs) — geometrically verified.
+- Post-freeze val smoke test (3 cases, real MONAI 1.6 pipeline): geometry
+  match, labels {0,1,2}, finite values. Test volumes never opened.
 
 - Objective: reproducible preprocessing + sanity visuals.
 - Tasks: resampling, intensity normalization, cropping/patching pipeline

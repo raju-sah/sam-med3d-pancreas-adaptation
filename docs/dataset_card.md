@@ -4,20 +4,26 @@
 
 - Dataset: Medical Segmentation Decathlon, Task 7 — Pancreas (Task07_Pancreas)
 - Modality: CT, portal venous phase
-- Targets: pancreas + pancreatic tumor/cancer (multi-class 3D segmentation)
+- Targets: pancreas + pancreatic mass/tumor (multi-class 3D segmentation)
 - Label mapping (from mirror `dataset.json`, confirmed by voxel audit):
-  `0 = background`, `1 = pancreas`, `2 = cancer`
+  `0 = background`, `1 = pancreas`,
+  `2 = pancreatic mass/tumor` (`'cancer'` in dataset.json; the MSD
+  publication describes the ROI more generally as pancreatic mass, cyst or
+  tumor — no claim of pathological confirmation is made here)
 
 ## Sources
 
 - Original: Memorial Sloan Kettering Cancer Center, via the MSD challenge
   (http://medicaldecathlon.com). Release 1.0, 04/05/2018.
-- License (original release): CC-BY-SA 4.0. Cite arXiv:1902.09063.
-- Kaggle mirror used for compute: `hansenc/pancreas-task07`
+- Original-release license: the MSD `dataset.json` metadata declares
+  CC-BY-SA 4.0. Cite arXiv:1902.09063.
+- Kaggle mirror used as compute/data-transport mirror:
+  `hansenc/pancreas-task07`
   (https://www.kaggle.com/datasets/hansenc/pancreas-task07).
   Chosen for genuine Task07 structure, byte-identical sizes to sibling
-  mirrors, no junk files, most recent update. Mirror itself declares no
-  license; terms inherited from the original release above.
+  mirrors, no junk files, most recent update. Provenance and attribution
+  point to the original MSD release; the mirror itself does not
+  independently declare a license.
 
 ## Verified counts (remote CPU audit, kernel v4)
 

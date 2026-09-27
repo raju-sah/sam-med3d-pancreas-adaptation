@@ -45,14 +45,17 @@ NOT our test set (labels unavailable); used at most for inference sanity.
 - Kaggle mirror chosen: `hansenc/pancreas-task07` — genuine Task07 structure
   (imagesTr/labelsTr/imagesTs + dataset.json), byte-identical file sizes to
   two sibling mirrors, cleanest copy (no macOS `._` junk files), most
-  recently updated (2026-09-01). Mirror declares no license itself
-  ("unknown"); license taken from the authoritative MSD release above.
+  recently updated (2026-09-01). The mirror is used as a compute/data-transport
+  mirror: provenance and attribution point to the original MSD release, and
+  the mirror itself does not independently declare a license.
   Cosmetic mirror difference: volumes stored uncompressed `.nii` while the
   original `dataset.json` references `.nii.gz`; content verified readable.
 
 ## Task labels
 
-0 = background, 1 = pancreas, 2 = pancreatic tumor/cancer.
+0 = background, 1 = pancreas, 2 = pancreatic mass/tumor (`'cancer'` in
+dataset.json; the MSD publication describes the ROI more generally as
+pancreatic mass, cyst or tumor — no pathological-confirmation claim made).
 
 ## Limitations
 
