@@ -7,7 +7,7 @@ import os
 import subprocess
 import sys
 
-COMMIT = "FILL_AFTER_CODE_COMMIT"
+COMMIT = "4140de35f361d3c31136fccabf32608749bc9dc4"
 REPO = "https://github.com/raju-sah/sam-med3d-pancreas-adaptation"
 WORK = "/kaggle/working"
 
