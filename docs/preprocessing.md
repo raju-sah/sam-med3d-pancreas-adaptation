@@ -10,8 +10,10 @@ Implementation: `src/data/preprocess.py`. Evidence: TRAIN-only profile
 MSD Task07_Pancreas CT volumes, NIfTI, all RAS orientation (audit-verified).
 Native spacing heterogeneous: in-plane 0.61–0.98 mm, axial 0.7–7.5 mm.
 Labels discrete {0 background, 1 pancreas, 2 mass/tumor}; every labeled case
-contains both foreground classes. Intensities: air/out-of-field ≤ −1000,
-soft tissue < 1000 (per-case p99.5 max 700.4), bone/contrast/metal up to 4009.
+contains both foreground classes. Intensities: values ≤ −1000
+(out-of-field/air) common; per-case p99.5 max 700.4 HU observed across TRAIN;
+values up to 4009 HU present (dense bone/contrast/metal plausible, tissue
+identity of extreme voxels not established).
 
 ## Common preprocessing (Layer A, model-independent)
 
@@ -20,13 +22,20 @@ soft tissue < 1000 (per-case p99.5 max 700.4), bone/contrast/metal up to 4009.
 3. Canonical orientation RAS (`Orientationd`).
 4. Resample to **1.5 mm isotropic**: image bilinear, label nearest, then
    re-assert {0,1,2}.
-5. Clamp CT to **[-1000, 1000]** (soft tissue fully preserved; air/bone/metal
-   handled per evidence in ADR 002). Implemented as MONAI
+5. Clamp CT to **[-1000, 1000]**. Retained because it matches upstream
+   SAM-Med3D CT preprocessing and train profiling supports it as reasonable:
+   across the TRAIN profile, the maximum per-case estimated p99.5 was
+   700.4 HU (combined with the upstream clamp, this supports retaining it;
+   tissue identity of voxels above p99.5 was not established, so no claim is
+   made that every value > 1000 is bone/metal). Implemented as MONAI
    `ScaleIntensityRangeD(..., clip=True)` with equal in/out bounds, which is
    exactly a clamp — used because the remotely installed MONAI 1.6.0 has no
    `ClipIntensityD/d` dict alias (verified at smoke-test time).
-6. Per-volume foreground-masked z-score (`nonzero` ⇒ image > 0 after clamp):
-   image-only, no labels, no global statistics → inference-safe.
+6. Per-volume positive-intensity-masked z-score (mask criterion exactly
+   image > 0 after clamp; image-only, no labels — NOT anatomical
+   foreground): statistics from positive voxels, applied to all voxels.
+   Matches upstream `ZNormalization(masking_method=lambda x: x > 0)`;
+   inference-safe.
 7. Deterministic: no randomness in this path (seed recorded anyway).
 
 ## U-Net future expectations (Layer B)
@@ -38,7 +47,8 @@ exactly Layer A (+ fixed-size tiling decided in Phase 3).
 
 ## SAM-Med3D compatibility (Layer B)
 
-Upstream canonical input: 1.5 mm iso + RAS + per-volume fg-masked z-score +
+Upstream canonical input: 1.5 mm iso + RAS + per-volume
+positive-intensity-masked z-score (image > 0) +
 CT clamp (when path matches CT convention — ours applies it explicitly) +
 per-class binary masks + label-centered 128³ ROI for training/prompted
 inference. Our Layer A matches upstream through normalization; per-class
@@ -55,7 +65,8 @@ resampling back to native grids.
 ## Spacing / intensity decisions
 
 See ADR 002. In short: 1.5_iso (min tumor keeps 195 voxels ≥ 50-voxel rule);
-clamp [-1000,1000] (soft-tissue preservation rule); fg-masked z-score.
+clamp [-1000,1000] (upstream match + TRAIN p99.5 evidence);
+positive-intensity-masked z-score (image > 0).
 
 ## Interpolation rules
 
@@ -104,7 +115,8 @@ mass/tumor]; plus raw-vs-preprocessed middle-slice comparison.
 
 - 1.5 mm resampling upsamples thick-slice (up to 7.5 mm axial) cases ×5 in
   z — interpolated detail, documented, not new information.
-- fg-masked z-score normalizes by non-air voxels; extreme metal artifacts
-  remain clamped but present — noted for Phase 3 augmentation review.
+- positive-intensity-masked z-score normalizes using voxels with image
+  value > 0 after clamp; extreme metal artifacts remain clamped but present
+  — noted for Phase 3 augmentation review.
 - Percentiles estimated on strided samples (documented in profile JSON);
   min/max/mean/std exact.

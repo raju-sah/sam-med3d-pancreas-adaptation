@@ -27,8 +27,18 @@
 - CT clamp `tio.Clamp(-1000, 1000)` applied in the data loader, but ONLY when
   the image path contains `"/ct_"` (upstream path convention).
 - Normalization per step: `tio.ZNormalization(masking_method=lambda x: x > 0)`
-  — foreground-masked z-score computed **per volume on the fly** from the
-  image alone (no global statistics, no labels needed).
+  — positive-INTENSITY-masked z-score computed **per volume on the fly**
+  from the image alone (no global statistics, no labels needed). Verified
+  semantics (TorchIO 1.2.1 source, `transforms/preprocessing/intensity/`:
+  `NormalizationTransform` builds the mask by calling the masking function
+  on the intensity tensor; `ZNormalization.znorm` computes mean/std over
+  masked voxels ONLY, then standardizes the WHOLE tensor; std == 0 raises
+  RuntimeError). NOT MONAI `NormalizeIntensity(nonzero=True)`: MONAI 1.6.0
+  masks `img != 0` (includes negatives) and leaves masked-out voxels
+  unchanged, while upstream standardizes every voxel. Our
+  `positive_intensity_zscore` reproduces upstream exactly (direct equivalence
+  max diff 1.0e-3, float32 rounding; degenerate inputs return zeros instead
+  of raising — documented in code).
 - Cases whose cropped label sum ≤ `threshold` (1000 in train.py; class
   default 500) are rejected and replaced by a random re-draw.
 - Loss `DiceCELoss(sigmoid=True)` and Dice scored at 0.5 on `(gt > 0)`:
@@ -39,7 +49,7 @@
 
 - `data_preprocess`: binarize one category → `Resample(1.5,1.5,1.5)` →
   `ToCanonical()` → `CropOrPad(mask_name='label', (128,128,128))` →
-  foreground-masked `ZNormalization`. Same defaults: `crop_size=128`,
+  positive-intensity-masked `ZNormalization`. Same defaults: `crop_size=128`,
   `target_spacing=(1.5,1.5,1.5)`.
 - ROI crop at inference ALSO centers on the (binarized) label, and prompt
   points are sampled from GT (`random_sample_next_click`); the readme states
@@ -59,8 +69,10 @@
 3. Label-aware 128³ cropping is TRAIN/ROI-scoped upstream too (it needs a
    mask). Our inference-safe deterministic pipeline must NOT depend on GT;
    label-aware sampling stays training-only (same separation as upstream).
-4. Intensity: CT clamp [-1000,1000] + per-volume foreground-masked z-score
-   needs no global stats and no labels — directly reusable as our common
-   deterministic intensity step; train percentiles will justify the clamp.
+4. Intensity: CT clamp [-1000,1000] + per-volume positive-intensity-masked
+   z-score (mask criterion exactly image > 0 after clamp; image-only, no
+   labels — NOT anatomical foreground) needs no global stats — directly
+   reusable as our common deterministic intensity step; train percentiles
+   will justify the clamp.
 5. Upstream `ToCanonical` uses torchio (RAS+ / LPS? — torchio canonical is
    RAS); our MONAI `Orientationd(axcodes='RAS')` is the equivalent.

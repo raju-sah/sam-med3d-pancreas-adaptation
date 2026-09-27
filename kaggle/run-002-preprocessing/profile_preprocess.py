@@ -58,6 +58,20 @@ def check_alignment(image, label):
     return tuple(label.shape)
 
 
+def positive_intensity_zscore(image):
+    """Upstream-compatible z-score: stats over voxels with value > 0, applied
+    to ALL voxels. Matches tio.ZNormalization(masking_method=lambda x: x > 0).
+    Degenerate input (no positives / std 0) -> zeros (documented)."""
+    img = np.asarray(image, dtype=np.float32)
+    vals = img[img > 0]
+    if vals.size == 0:
+        return np.zeros_like(img)
+    mean, std = float(vals.mean()), float(vals.std())
+    if std == 0.0:
+        return np.zeros_like(img)
+    return ((img - mean) / std).astype(np.float32)
+
+
 def _T(mod, *names):
     for n in names:
         if hasattr(mod, n):
@@ -73,7 +87,21 @@ def build_monai_inference_transforms(cfg):
     Orientationd = _T(T, "Orientationd", "OrientationD")
     Spacingd = _T(T, "Spacingd", "SpacingD")
     ScaleRanged = _T(T, "ScaleIntensityRangeD", "ScaleIntensityRanged")
-    Normd = _T(T, "NormalizeIntensityd", "NormalizeIntensityD")
+
+    class PositiveMaskZNormalization(T.MapTransform):
+        def __call__(self, data):
+            import torch
+
+            d = dict(data)
+            for key in self.keys:
+                img = d[key]
+                is_torch = torch.is_tensor(img)
+                arr = img.detach().cpu().numpy() if is_torch else np.asarray(img)
+                chs = arr if arr.ndim == 4 else arr[np.newaxis]
+                out = np.stack([positive_intensity_zscore(ch) for ch in chs])
+                d[key] = torch.from_numpy(out) if is_torch else out
+            return d
+
     pre = [
         LoadImaged(keys=["image", "label"]),
         ChannelFirstd(keys=["image", "label"]),
@@ -84,8 +112,8 @@ def build_monai_inference_transforms(cfg):
                             mode=(cfg.get("image_mode", "bilinear"),
                                   cfg.get("label_mode", "nearest"))))
     pre += [ScaleRanged(keys=["image"], a_min=cfg["clamp_min"], a_max=cfg["clamp_max"],
-                            b_min=cfg["clamp_min"], b_max=cfg["clamp_max"], clip=True),
-            Normd(keys=["image"], nonzero=True, channel_wise=True)]
+                        b_min=cfg["clamp_min"], b_max=cfg["clamp_max"], clip=True),
+            PositiveMaskZNormalization(keys=["image"])]
     return T.Compose(pre)
 def ensure_monai():
     try:
@@ -348,10 +376,11 @@ def main() -> int:
         "clamp_evidence": {
             "max_train_frac_outside": max_out,
             "percase_p99.5_max": p995_max,
-            "rule": "[-1000,1000] iff per-case p99.5 max < 1000 (soft tissue "
-            "preserved; outliers are air/bone/metal only)",
+            "rule": "[-1000,1000] retained: matches upstream CT clamp; max "
+            "per-case estimated p99.5 was 700.4 HU (tissue identity of voxels "
+            "above p99.5 not established)",
         },
-        "norm": "fg_zscore",
+        "norm": "positive_intensity_zscore",
         "image_mode": "bilinear",
         "label_mode": "nearest",
         "valid_labels": [0, 1, 2],
@@ -417,6 +446,32 @@ def main() -> int:
         print(f"smoke OK {cid} {list(im.shape)}", flush=True)
     with open(OUT / "val_smoke.json", "w") as f:
         json.dump(smoke, f, indent=1)
+    # --- corrective-pass check: old (MONAI nonzero) vs corrected (x > 0) ---
+    import monai.transforms as T  # noqa: E402
+
+    old_norm = T.NormalizeIntensity(nonzero=True)
+    comp = []
+    for cid in sorted(train_ids)[:5]:
+        ip = root / "imagesTr" / f"{cid}.nii"
+        img = np.clip(np.asarray(nib.load(str(ip)).dataobj, dtype=np.float32), *CLAMP)
+        pos = img[img > 0]
+        nz = img[img != 0]
+        corrected = positive_intensity_zscore(img)
+        old = np.asarray(old_norm(img.copy()))
+        comp.append({
+            "case_id": cid,
+            "pos_frac": round(float((img > 0).mean()), 6),
+            "corrected_mean": round(float(pos.mean()), 3),
+            "corrected_std": round(float(pos.std()), 3),
+            "old_nonzero_mean": round(float(nz.mean()), 3),
+            "old_nonzero_std": round(float(nz.std()), 3),
+            "max_abs_diff_old_vs_corrected": round(float(np.abs(old - corrected).max()), 4),
+            "finite": bool(np.isfinite(corrected).all()),
+        })
+        print(f"normcmp {cid} pos_frac={comp[-1]['pos_frac']} "
+              f"maxdiff={comp[-1]['max_abs_diff_old_vs_corrected']}", flush=True)
+    with open(OUT / "norm_comparison.json", "w") as f:
+        json.dump(comp, f, indent=1)
     print("PHASE2 KERNEL DONE", flush=True)
     return 0
 

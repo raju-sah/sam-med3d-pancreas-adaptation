@@ -3,16 +3,22 @@
 - Date: 2026-09-27
 - Status: accepted (spacing, orientation, intensity, interpolation, labels)
 - Evidence: TRAIN-only remote profile, kernel
-  `rajucode/task07-pancreas-phase-2-preproc-profile-cpu` v3/v4,
+  `rajucode/task07-pancreas-phase-2-preproc-profile-cpu` v8 (completed run;
+  v3–v7 were failed iterations documented in the Phase 2 report),
   `results/dataset/phase2_train_profile.{json,csv}` (n=197, seed 42).
+- Corrective fix (same date): normalization implementation corrected to the
+  explicit upstream-compatible `positive_intensity_zscore`
+  (see `docs/sammed3d_preprocessing_notes.md`); policy parameters unchanged.
 
 ## Train-only evidence (nothing from val/test used for decisions)
 
 - Spacing: in-plane 0.61–0.98 mm (median 0.81), axial 0.7–7.5 mm
   (median 2.5, p95 5.0). Anisotropic; orientations all RAS.
 - Intensity (CT): per-case min −2048…−1024 (out-of-field/air), max
-  1141…4009 (bone/contrast/metal); median p50 ≈ −906 (background-dominated),
-  p95 ≈ 131, p99 ≈ 275, per-case p99.5 max 700.4. Soft tissue fully < 1000.
+  1141…4009; median p50 ≈ −906 (background-dominated),
+  p95 ≈ 131, p99 ≈ 275, per-case p99.5 max 700.4. Tissue identity of
+  extreme voxels not established — no claim made about which tissues exceed
+  1000.
 - Foreground: median fg fraction 0.002 (severe imbalance); pancreas
   20k–201k mm³ (median 74k); mass/tumor 768–732k mm³ (median 5389);
   smallest tumor 401 native voxels.
@@ -31,14 +37,15 @@
    leaves heterogeneous grids (0.6–1.0 × 0.7–7.5 mm) and breaks
    SAM-Med3D compatibility for Phase 4/5. Tradeoff: 7.5 mm-axial cases are
    upsampled ×5 in z (interpolated, not new information) — documented.
-3. **Intensity: clamp [-1000, 1000] + per-volume foreground-masked z-score.**
-   Clamp rule refined with evidence: the original <0.5%-outlier rule was
-   too strict (12–43% of voxels lie outside, but these are air below −1000
-   and bone/metal above 1000). Adopted criterion: entire train soft-tissue
-   range preserved (per-case p99.5 max 700.4 < 1000) — PASS. Matches upstream
-   `Clamp(-1000,1000)` + `ZNormalization(masking x>0)`, which needs no global
-   statistics and no labels → inference-safe. No label-derived statistics
-   are ever used for image normalization.
+3. **Intensity: clamp [-1000, 1000] + per-volume positive-intensity-masked
+   z-score** (mask criterion exactly image > 0 after clamp; image-only, no
+   labels — NOT anatomical foreground). Clamp retained because it matches
+   upstream SAM-Med3D CT preprocessing and train profiling supports it as
+   reasonable: across the TRAIN profile, the maximum per-case estimated
+   p99.5 was 700.4 HU. Matches upstream `Clamp(-1000,1000)` +
+   `ZNormalization(masking x>0)`, which needs no global statistics and no
+   labels → inference-safe. No label-derived statistics are ever used for
+   image normalization.
 4. **Interpolation: image bilinear/trilinear, labels nearest ONLY**, with a
    {0,1,2} assertion after every label resample (locally tested, remotely
    smoke-tested).
@@ -50,7 +57,7 @@
 ## Inference vs training separation
 
 - Deterministic inference-safe pipeline: orientation → 1.5 mm spacing →
-  clamp → fg-masked z-score. No GT required at any step.
+  clamp → positive-intensity-masked z-score (image > 0). No GT required.
 - Label-aware 128³ ROI cropping / patch sampling is TRAINING-ONLY (same
   separation as upstream, whose CropOrPad(mask_name='label') also needs a
   mask). Full augmentation deferred to Phase 3.

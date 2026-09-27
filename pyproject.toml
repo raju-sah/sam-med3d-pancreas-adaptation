@@ -21,6 +21,9 @@ kaggle = [
 ]
 dev = [
   "pytest>=8.0",
+  # Equivalence-test deps (tests skip gracefully if absent):
+  "torchio>=1.0",  # direct ZNormalization equivalence (test_preprocess.py)
+  "monai>=1.4",  # MONAI pipeline builder test (test_preprocess.py)
 ]
 
 [build-system]

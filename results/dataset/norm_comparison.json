@@ -1,0 +1,52 @@
+[
+ {
+  "case_id": "pancreas_001",
+  "pos_frac": 0.271856,
+  "corrected_mean": 105.951,
+  "corrected_std": 95.558,
+  "old_nonzero_mean": -445.475,
+  "old_nonzero_std": 490.617,
+  "max_abs_diff_old_vs_corrected": 10.4434,
+  "finite": true
+ },
+ {
+  "case_id": "pancreas_004",
+  "pos_frac": 0.273047,
+  "corrected_mean": 94.085,
+  "corrected_std": 97.885,
+  "old_nonzero_mean": -498.469,
+  "old_nonzero_std": 500.292,
+  "max_abs_diff_old_vs_corrected": 10.1748,
+  "finite": true
+ },
+ {
+  "case_id": "pancreas_005",
+  "pos_frac": 0.199487,
+  "corrected_mean": 97.571,
+  "corrected_std": 105.6,
+  "old_nonzero_mean": -617.547,
+  "old_nonzero_std": 482.52,
+  "max_abs_diff_old_vs_corrected": 9.601,
+  "finite": true
+ },
+ {
+  "case_id": "pancreas_010",
+  "pos_frac": 0.212388,
+  "corrected_mean": 87.6,
+  "corrected_std": 84.992,
+  "old_nonzero_mean": -507.247,
+  "old_nonzero_std": 486.694,
+  "max_abs_diff_old_vs_corrected": 11.7841,
+  "finite": true
+ },
+ {
+  "case_id": "pancreas_012",
+  "pos_frac": 0.221003,
+  "corrected_mean": 107.599,
+  "corrected_std": 102.015,
+  "old_nonzero_mean": -544.976,
+  "old_nonzero_std": 491.389,
+  "max_abs_diff_old_vs_corrected": 9.9313,
+  "finite": true
+ }
+]

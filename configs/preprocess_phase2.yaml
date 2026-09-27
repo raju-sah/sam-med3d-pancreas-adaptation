@@ -9,11 +9,15 @@ seed: 42
 target_spacing: [1.5, 1.5, 1.5]
 upstream_spacing: [1.5, 1.5, 1.5]
 
-# --- intensity: FROZEN (ADR 002; soft-tissue preservation rule) ---
+# --- intensity: FROZEN (ADR 002; see note below) ---
 clamp_min: -1000
 clamp_max: 1000
-norm: fg_zscore             # FROZEN: per-volume foreground-masked z-score (upstream,
-                            # inference-safe: image-only, no labels, no global stats)
+norm: positive_intensity_zscore  # FROZEN: positive-INTENSITY-masked z-score,
+                                # mask criterion exactly image > 0 after clamp.
+                                # Matches upstream SAM-Med3D
+                                # tio.ZNormalization(masking_method=lambda x: x > 0).
+                                # Image-only, no labels, no global stats -> inference-safe.
+                                # NOT MONAI nonzero (!= 0); NOT anatomical foreground.
 
 dataset: MSD Task07_Pancreas
 split_ref: data/splits/split_manifest.json

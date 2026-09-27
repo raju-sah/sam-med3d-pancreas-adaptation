@@ -9,6 +9,9 @@ transform builder lazy-imports monai so this module imports without it.
 Rules enforced here:
 - labels are always nearest-neighbor resampled; {0,1,2} asserted afterwards
 - derived binary masks are in-memory only; original GT never overwritten
+- normalization is the positive-INTENSITY z-score (image > 0, no labels),
+  matching upstream ZNormalization(masking_method=lambda x: x > 0) —
+  NOT MONAI nonzero (!= 0) and NOT anatomical foreground
 - no test IDs may enter profiling (see assert_not_test / split helpers)
 """
 
@@ -118,6 +121,36 @@ def assert_not_test(case_ids: list[str], splits_dir: str | Path | None = None) -
         raise ValueError(f"frozen test IDs must not enter Phase 2 profiling: {sorted(leaked)}")
 
 
+def positive_intensity_zscore(image: np.ndarray) -> np.ndarray:
+    """Upstream-compatible z-score (TorchIO semantics, no TorchIO needed).
+
+    Mask criterion: exactly image > 0 (positive-INTENSITY mask — uses no
+    segmentation labels; NOT anatomical foreground). Mean/std are computed
+    over positive voxels only, then applied to ALL voxels:
+    ``out = (image - mean_pos) / std_pos``. Matches
+    ``tio.ZNormalization(masking_method=lambda x: x > 0)`` (verified against
+    TorchIO 1.2.1 source: ``NormalizationTransform`` + ``ZNormalization.znorm``,
+    which standardizes the whole tensor from masked-voxel statistics).
+
+    NOT equivalent to MONAI ``NormalizeIntensity(nonzero=True)``: MONAI masks
+    ``img != 0`` (includes negatives) and leaves masked-out voxels unchanged,
+    while upstream standardizes every voxel.
+
+    Degenerate input (no positive voxels, or std == 0) returns all-zeros
+    float32 — documented deviation from upstream, which raises RuntimeError.
+    Deterministic. Expects a single channel; callers map over channels.
+    """
+    img = np.asarray(image, dtype=np.float32)
+    vals = img[img > 0]
+    if vals.size == 0:
+        return np.zeros_like(img)
+    mean = float(vals.mean())
+    std = float(vals.std())
+    if std == 0.0:
+        return np.zeros_like(img)
+    return ((img - mean) / std).astype(np.float32)
+
+
 def _T(mod, *names):
     """First existing transform name (MONAI renamed *d aliases to *D)."""
     for n in names:
@@ -129,9 +162,11 @@ def _T(mod, *names):
 def build_monai_inference_transforms(cfg: dict[str, Any]):
     """Build the deterministic MONAI Compose from the frozen config.
 
-    Lazy-imports monai (available on Kaggle, absent locally). Keys used:
+    Lazy-imports monai (installed locally and on Kaggle). Keys used:
     orientation, target_spacing (or null for native), clamp_min/max,
-    norm ('fg_zscore'), image_mode, label_mode.
+    norm ('positive_intensity_zscore'), image_mode, label_mode.
+    Normalization is the explicit upstream-compatible positive-intensity
+    z-score (NOT MONAI nonzero), applied per channel via a lazy MapTransform.
     """
     import monai.transforms as T
 
@@ -140,7 +175,22 @@ def build_monai_inference_transforms(cfg: dict[str, Any]):
     Orientationd = _T(T, "Orientationd", "OrientationD")
     Spacingd = _T(T, "Spacingd", "SpacingD")
     ScaleRanged = _T(T, "ScaleIntensityRangeD", "ScaleIntensityRanged")
-    Normd = _T(T, "NormalizeIntensityd", "NormalizeIntensityD")
+
+    class PositiveMaskZNormalization(T.MapTransform):
+        """Apply positive_intensity_zscore per channel (upstream semantics)."""
+
+        def __call__(self, data):
+            import torch
+
+            d = dict(data)
+            for key in self.keys:
+                img = d[key]
+                is_torch = torch.is_tensor(img)
+                arr = img.detach().cpu().numpy() if is_torch else np.asarray(img)
+                chs = arr if arr.ndim == 4 else arr[np.newaxis]
+                out = np.stack([positive_intensity_zscore(ch) for ch in chs])
+                d[key] = torch.from_numpy(out) if is_torch else out
+            return d
 
     pre: list = [
         LoadImaged(keys=["image", "label"]),
@@ -165,6 +215,6 @@ def build_monai_inference_transforms(cfg: dict[str, Any]):
             b_max=cfg["clamp_max"],
             clip=True,
         ),
-        Normd(keys=["image"], nonzero=True, channel_wise=True),
+        PositiveMaskZNormalization(keys=["image"]),
     ]
     return T.Compose(pre)

@@ -46,12 +46,20 @@
 - TRAIN-only profile (n=197, remote CPU kernel v8): spacing/intensity/
   foreground stats recorded; policy frozen in ADR 002 and
   `configs/preprocess_phase2.yaml` (RAS, 1.5 mm iso, clamp [-1000,1000],
-  fg-masked z-score, nearest-only labels, in-memory binary targets).
+  positive-intensity-masked z-score (mask criterion image > 0),
+  nearest-only labels, in-memory binary targets).
 - `src/data/preprocess.py` + `tests/test_preprocess.py` (synthetic only).
 - Train-only figures for 5 representative cases + raw-vs-preprocessed views
   (`results/figures/phase2/`, 10 PNGs) — geometrically verified.
 - Post-freeze val smoke test (3 cases, real MONAI 1.6 pipeline): geometry
   match, labels {0,1,2}, finite values. Test volumes never opened.
+- Corrective validation (same date, policy params unchanged): normalization
+  implementation fixed to explicit upstream-compatible
+  `positive_intensity_zscore` (image > 0) after review found MONAI
+  `nonzero=True` (!= 0, masked-only application) was not equivalent to
+  upstream `ZNormalization(masking_method=lambda x: x > 0)`; direct TorchIO
+  equivalence verified locally, kernel v9 re-ran smoke + old-vs-corrected
+  comparison on train cases.
 
 - Objective: reproducible preprocessing + sanity visuals.
 - Tasks: resampling, intensity normalization, cropping/patching pipeline
