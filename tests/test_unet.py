@@ -196,6 +196,19 @@ class UnetPhase3(unittest.TestCase):
         self.assertFalse(is_improvement(0.4005, 0.4))  # within min_delta
         self.assertFalse(is_improvement(0.4, 0.5))
 
+    def test_validate_volume(self):
+        from src.models.unet import build_unet
+        from src.training.trainer import validate_volume
+
+        cfg = toy_cfg()
+        m = build_unet(cfg).eval()
+        pair = toy_pair()
+        rep = validate_volume(m, pair["image"], pair["label"], cfg, "cpu")
+        for k in ("dice_class1", "dice_tumor", "dice_macro_foreground", "dice_whole"):
+            self.assertIn(k, rep)
+            self.assertGreaterEqual(rep[k], 0.0)
+            self.assertLessEqual(rep[k], 1.0)
+
 
 if __name__ == "__main__":
     unittest.main()

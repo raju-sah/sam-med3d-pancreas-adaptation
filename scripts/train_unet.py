@@ -127,7 +127,7 @@ def mode_smoke(cfg, task_root: Path, out: Path) -> dict:
     det = T.Compose([P.build_monai_inference_transforms(cfg),
                      P._T(T, "ToTensord", "ToTensorD")(keys=["image", "label"])])
     d = det({"image": val_items[0]["image"], "label": val_items[0]["label"]})
-    rep = validate_volume(model, d["image"], cfg, device)
+    rep = validate_volume(model, d["image"], d["label"], cfg, device)
     gates["sliding_window_macro"] = round(rep["dice_macro_foreground"], 4)
     # single-batch overfit: fixed batch, 60 iters
     fixed_img, fixed_lbl = img.detach(), lbl.detach()

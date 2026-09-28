@@ -100,8 +100,9 @@ def build_scheduler(cfg: dict[str, Any], optimizer) -> Any:
 
 
 @torch.no_grad()
-def validate_volume(model, image: torch.Tensor, cfg: dict, device) -> dict[str, float]:
+def validate_volume(model, image, label, cfg: dict, device) -> dict[str, float]:
     """Sliding-window inference on one full volume -> metric report."""
+    import numpy as np
     from monai.inferers import sliding_window_inference
 
     from src.training.metrics import multiclass_report, softmax_argmax
@@ -115,7 +116,8 @@ def validate_volume(model, image: torch.Tensor, cfg: dict, device) -> dict[str, 
         overlap=cfg["sw_overlap"],
         mode=cfg["sw_mode"],
     )
-    return multiclass_report(softmax_argmax(logits[0].cpu()))
+    return multiclass_report(softmax_argmax(logits[0].cpu()),
+                             np.asarray(label[0].cpu()))
 
 
 def env_report() -> dict[str, Any]:
@@ -228,7 +230,7 @@ class Trainer:
         agg: dict[str, list[float]] = {}
         for item in self.val_items:
             d = det({"image": item["image"], "label": item["label"]})
-            rep = validate_volume(self.model, d["image"], self.cfg, self.device)
+            rep = validate_volume(self.model, d["image"], d["label"], self.cfg, self.device)
             for k, v in rep.items():
                 agg.setdefault(k, []).append(v)
         return {k: float(np.mean(v)) for k, v in agg.items()}
