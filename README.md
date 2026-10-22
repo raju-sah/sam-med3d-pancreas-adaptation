@@ -93,3 +93,8 @@ same fixed seed subsampling, all models compared at each fraction.
 - [x] Phase 1: MSD Task07 locked, remote audit clean, frozen 197/42/42 splits — DONE
 - [x] Phase 2: preprocessing frozen (RAS/1.5mm/clamp/z-score), train figures, val smoke test — DONE
 - [ ] Phases 3–10: see `docs/research_plan.md` — NOT STARTED
+
+
+## Licensing
+
+Original software code is licensed under Apache 2.0. Third-party materials retain their own terms. See [LICENSING.md](LICENSING.md) for scope and exclusions.
